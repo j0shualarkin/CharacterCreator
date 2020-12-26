@@ -85,16 +85,39 @@ Color : 0 (constant)
    (choice "Shape" "triangle")
    (choice "Color" "red")))
 
+(define choice-type-equal? string=?)
+
+(define foo
+  (λ (c ls)
+    (foldr (λ (x a)
+             (if (choice-type-equal? c (choice-type x))
+                 (choice-value x)
+                 a))
+           #f
+           ls)))
+
 ;; lookup-choice : Choice-Type (List Choice) Boolean -> Choice-Value
 (define (lookup-choice c ls q?)
-  (let ((access (if q? cadr caddr))
+  (let ((makeNormalImage cadr)
+        (makeQuackingImage caddr)
         (v (foldr (λ (x a)
-                    (if (equal? c (choice-type x))
+                    (if (choice-type-equal? c (choice-type x))
                         (choice-value x)
                         a))
                   #f
                   ls)))
-    (and v (access (assoc v CHOICE-FNS)))))
+    (let ([x (assoc v CHOICE-FNS)])
+
+      #;
+      (if (and (foo c ls) x)
+          (if q?
+              (makeNormalImage x)
+              (makeQuackingImage x)))
+      (and v
+           x
+           (if q?
+               (makeNormalImage x)
+               (makeQuackingImage x))))))
 
 ;; draw-choices : [(List Choice) -> [Bool -> Image]]
 (define ((draw-choices cs) quack?)

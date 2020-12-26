@@ -48,37 +48,60 @@
 (define LeftArrowImage ((ARROW 0.6 50) "left" '("plum")))
 (define RightArrowImage ((ARROW 0.6 50) "right" '("plum")))
 
-;; draw-arrows : Choice Image Image Image -> Image 
-(define (draw-arrows c LeftArrow RightArrow baseImg)
-  (beside LeftArrow baseImg RightArrow))
 
-;; draw-highlighted-arrows : Choice -> Image -> Image
+(define SpaceBetweenArrows 110)
+(define SpaceBetweenTypes 60)
+
+;; make-type-image : Choice -> Image
+;; use the constants SpaceBetweenArrows and SpaceBetweenTypes to make a white canvas
+;; to draw the text for the given type on
+(define (make-type-image c)
+  (let ([BaseImageForTypeImage
+         (rectangle SpaceBetweenArrows SpaceBetweenTypes "solid" "white")])
+    (overlay (text (choice-type c) 24 "Goldenrod")
+             BaseImageForTypeImage)))
+
+;; draw-arrows : Choice Image Image -> Image 
+(define (draw-arrows c LeftArrow RightArrow phase)
+  (beside LeftArrow
+          ;; put the type name, e.g. "Color" on a fixed-size rectangle
+          (make-type-image c)
+          RightArrow))
+
+;; draw-highlighted-arrows : Choice -> Image
 ;; ... place highlighted arrows to the left and right (pointing that way too) 
-(define (draw-highlighted-arrows c img)
-  (draw-arrows c SelectedLeftArrowImage SelectedRightArrowImage img))
+(define (draw-highlighted-arrows c phase)
+  (draw-arrows c SelectedLeftArrowImage SelectedRightArrowImage phase))
 
-;; draw-regular-arrows : Choice -> Image -> Image
+;; draw-regular-arrows : Choice -> Image
 ;; ... place regular arrows to the left and right (pointing that way too)
-(define (draw-regular-arrows c img)
-  (draw-arrows c LeftArrowImage RightArrowImage img))
+(define (draw-regular-arrows c phase)
+  (draw-arrows c LeftArrowImage RightArrowImage phase))
 
 ;; draw-world : World -> Image
 (define (draw-world w)
   (match w
     ((world idx choices phase)
-     (car
-      (foldr
-       (λ (c pr_img_indx)
-         (if (= (cdr pr_img_indx) idx)
-             (cons (draw-highlighted-arrows c (car pr_img_indx))
-                   idx)
-             (cons (draw-regular-arrows c (car pr_img_indx))
-                   (add1 idx))))
-       ;; first draw the choices, then draw the arrows 
-       (cons ((draw-choices choices) phase)
-             0)
-       choices)))))
+     (beside
+      (car
+       (foldr
+        (λ (c pr_img_indx)
+          (if (= (cdr pr_img_indx) idx)
+              (cons (above (draw-highlighted-arrows c phase) (car pr_img_indx))
+                    idx)
+              (cons (above (draw-regular-arrows c phase) (car pr_img_indx))
+                    (add1 idx))))
+        ;; first draw the choices, then draw the arrows 
+        (cons empty-image 0)
+        choices))
+      ((draw-choices choices) phase)))))
 
+
+;;  <- Shape ->    |       /\
+;;  <- Color ->    |      /  \
+;;  ...            |     /    \
+;;  .              |     ______
+;;  .              |
 
 (define SCNW 300)
 (define SCNH 300)
@@ -132,6 +155,9 @@
 (check-equal? (draw-world (world 0 (list choice1 choice2) not-quacking))
               (add-image-to-base (circle 100 "solid" "red")
                                  (make-base 0)))
+
+;; Remember. A World is a (world Number [List Choice] Boolean)
+
 
 ;; use Arrow and draw-world
 (big-bang (world 0 (list choice1 choice2) not-quacking)
